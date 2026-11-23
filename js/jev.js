@@ -20,9 +20,7 @@ function say(who,text,kind){
   p.append(b,t);
   log.append(p);
   while(log.children.length>3)log.firstChild.remove();
-  log.hidden=false;
-  clearTimeout(say.t);
-  say.t=setTimeout(()=>{if(!busy&&document.activeElement!==input)log.hidden=true},12000);
+  log.hidden=!form.contains(document.activeElement);
   return p;
 }
 
@@ -65,7 +63,12 @@ form.addEventListener('submit',async e=>{
   // the box keeps the focus, so the next request can be typed straight away; Escape leaves it
   finally{wait.remove();busy=false;form.classList.remove('busy');send.disabled=false;input.focus()}
 });
+// the conversation shows only while the box is in use: focusing it brings the last messages back,
+// and leaving it (a tap or click anywhere else) hides them
 input.addEventListener('focus',()=>{if(log.children.length)log.hidden=false});
+input.addEventListener('blur',e=>{if(!form.contains(e.relatedTarget))log.hidden=true});
+// the stage swallows pointer events (no default focus change), so a tap there must release the box
+document.addEventListener('pointerdown',e=>{if(document.activeElement===input&&!form.contains(e.target))input.blur()},true);
 input.addEventListener('keydown',e=>{if(e.key==='Escape'){input.blur();log.hidden=true}});
 window.addEventListener('keydown',e=>{
   if(e.key==='/'&&!e.target.matches('input,select,textarea')&&!document.body.classList.contains('game-on')){e.preventDefault();input.focus()}
