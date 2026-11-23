@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SUDO SEQUENCER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Chakra+Petch:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<script type="importmap">{"imports":{"three":"./js/vendor/three.module.js"}}</script>
+</head>
+<body>
+
+<!-- ============================ the stage, full screen ============================ -->
+<div id="stageView">
+  <canvas id="stage" role="img" aria-label="A DJ at the decks inside a dark club, with moving heads, lasers, an LED wall and a crowd, all following the track"></canvas>
+
+  <div id="hud">
+    <!-- top: what is playing, where the set is, and everything that is not START or Jev -->
+    <header class="top" id="hTop">
+      <div class="brand"><span class="glyph" aria-hidden="true">▚</span><b>SUDO<span class="slash"> SEQUENCER</span></b></div>
+      <div class="now">
+        <p class="np"><b id="hStyle">—</b><span id="hKey">—</span><span><b id="hBpm">—</b> BPM</span></p>
+        <p class="pos"><i id="hSectL">SECTION</i><b id="hSect">—</b><i id="hBarL">BAR</i><b id="hBar">—</b><i>ROUND</i><b id="hRound">1/3</b><b id="hClock" class="clk" title="Time into this song">00:00</b></p>
+      </div>
+      <button id="hMenu" class="act menu" type="button" aria-expanded="false" aria-controls="hActions">MENU <span aria-hidden="true">▾</span></button>
+      <nav class="actions" id="hActions" aria-label="Song controls">
+        <button id="hNext" class="act" type="button" aria-keyshortcuts="N" title="Next song, on the next bar (N)">NEXT</button>
+        <button id="hBuild" class="act" type="button" aria-keyshortcuts="B" title="Skip the search and play the finished track (B)">SKIP BUILD</button>
+        <button id="hRec" class="act rec" type="button" aria-keyshortcuts="R" title="Record the set, then save it as a WAV (R)"><span class="dot"></span><span class="lbl">REC</span></button>
+        <button id="hGame" class="act" type="button" aria-pressed="false" aria-keyshortcuts="G" title="Play along on six keys (G)"><span class="long">PLAY ALONG</span><span class="short">GAME</span></button>
+        <button id="hSys" class="act ghost" type="button" aria-keyshortcuts="Tab" title="Setup: style, sounds, loops, character (Tab)">SETUP</button>
+      </nav>
+    </header>
+
+    <!-- live parts, one row per instrument -->
+    <aside id="hMeters" class="meters" aria-label="Live part levels"></aside>
+
+    <!-- the optional play-along game: notes fall to the line in time with the track -->
+    <section id="hGame2" class="game" aria-label="Play along" hidden>
+      <div class="gstat">
+        <span><i>SCORE</i><b id="gScore">0</b></span>
+        <span><i>COMBO</i><b id="gCombo">0</b></span>
+        <span><i>ACCURACY</i><b id="gAcc">—</b></span>
+        <span class="ghype"><i>HYPE</i><span class="hypebar"><span id="gHype"></span></span></span>
+      </div>
+      <div class="highway" data-tier="0"><canvas id="gHighway" aria-hidden="true"></canvas><b id="gJudge" class="gjudge" aria-live="polite"></b><b id="gBurst" class="gburst" aria-live="polite"></b></div>
+      <div class="pkeys" id="gKeys"></div>
+    </section>
+
+    <!-- bottom: START and Jev, nothing else -->
+    <footer class="dock" id="hDock">
+      <button id="hPlay" class="play" type="button" aria-keyshortcuts="Space" title="Start or pause (Space)"><span class="dot"></span><span class="lbl">START</span></button>
+      <form id="jev" class="jev" autocomplete="off">
+        <div id="jevLog" class="jevlog" hidden aria-live="polite"></div>
+        <label class="jl" for="jevIn">DJ</label>
+        <input id="jevIn" type="text" maxlength="500" enterkeyhint="send" aria-keyshortcuts="/" placeholder="Tell the DJ what to play: “dark warehouse techno at 135”">
+        <button id="jevSend" type="submit" aria-label="Send to the DJ">↵</button>
+      </form>
+    </footer>
+
+    <!-- beat rail: 16 steps, flashing on the audio clock -->
+    <div id="hRail" class="rail" aria-hidden="true"></div>
+
+    <!-- system drawer -->
+    <section id="hPanel" class="panel" hidden>
+      <div class="paneltop">
+        <b>SETUP</b><span id="hFace" class="muted">face: offline</span>
+        <button id="hPanelX" class="key ghost" type="button">ESC</button>
+      </div>
+      <div class="panelgrid">
+        <div>
+          <h4>RUN</h4>
+          <p class="mono">seed <b id="hSeed">—</b></p>
+          <label class="rounds">rounds per song
+            <select id="hRounds"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="8">8</option></select>
+          </label>
+          <p id="hRun" class="mono">idle</p>
+          <div id="mStatus" class="mount"></div>
+          <h4>TRACK DNA</h4>
+          <div id="mDna" class="mount"></div>
+          <h4>INSTRUMENTS</h4>
+          <p id="mInstSub" class="muted small"></p>
+          <div id="mInst" class="mount"></div>
+        </div>
+        <div>
+          <h4>STYLE</h4>
+          <div id="mStyle" class="mount"></div>
+          <h4>LOOPS</h4>
+          <div class="looprow">
+            <input id="hLoopName" type="text" placeholder="name this loop" aria-label="Loop name">
+            <button id="hLoopSave" class="key" type="button">SAVE</button>
+            <button id="hLoopExport" class="key ghost" type="button">EXPORT</button>
+            <button id="hLoopImport" class="key ghost" type="button">IMPORT</button>
+          </div>
+          <ul id="hLoops" class="mono loops"></ul>
+          <h4>CHARACTER</h4>
+          <div id="hChars" class="keys"></div>
+          <p id="hCharNote" class="muted small">CC0 avatars, VRM. Drop another .vrm in assets/vrm/ and add it to AVATARS in js/vrm.js.</p>
+          <h4>OUTPUT</h4>
+          <div class="keys">
+            <button id="hMidi" class="key ghost" type="button">MIDI</button>
+            <button id="hWav" class="key ghost" type="button">WAV</button>
+            <button id="hStyleBtn" class="key ghost" type="button">STYLE ▸</button>
+          </div>
+          <p id="hLoopNote" class="muted small">loops stay in this browser</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- toasts -->
+    <div id="hToasts" class="toasts" aria-live="polite"></div>
+
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="scan" aria-hidden="true"></div>
+
+    <!-- legacy status lines, reused as HUD readouts -->
+    <p id="scap" class="hiddenline">stage online</p>
+    <p id="headnote" class="hiddenline">face: loading</p>
+    <span id="sstate" class="hiddenline"></span>
+  </div>
+
+  <!-- legacy transport, hidden but still the engine's handles -->
+  <div class="legacy">
+    <button id="splay" type="button">Start the set</button>
+    <button id="snext" type="button">Next track</button>
+  </div>
+</div>
+
+<!-- ============================ legacy views: engine + loops + MIDI ============================ -->
+<div id="legacy" hidden>
+
+  <div id="clubView">
+    <span id="nInst">71</span>
+    <span id="nStyles">14</span>
+    <div class="transport">
+      <button id="play" type="button">Start</button>
+      <button id="again" type="button">New run</button>
+      <button id="skip" type="button">Skip layer</button>
+      <button id="skipall" type="button">Skip to track</button>
+      <button id="cmidi" type="button" hidden>Download MIDI</button>
+      <button id="build" type="button">Build now</button>
+      <button id="cwav" type="button">Record → WAV</button>
+    </div>
+    <select id="style"></select>
+    <section id="loopsCard">
+      <input id="loopName" type="text">
+      <button id="loopSave" type="button">Save loop</button>
+      <button id="loopExport" type="button">Export all</button>
+      <button id="loopImport" type="button">Import</button>
+      <input id="loopFile" type="file" accept="application/json,.json" hidden>
+      <ul id="loopList"></ul>
+      <p id="loopNote"></p>
+    </section>
+    <dl id="dna"></dl>
+    <div>
+      <span id="status"></span><span id="stat2"></span>
+      <canvas id="spec"></canvas>
+    </div>
+    <div id="lanes"></div>
+    <p id="instSub"></p>
+    <div id="inst"></div>
+    <p id="arrSub"></p>
+    <canvas id="arr"></canvas>
+    <canvas id="chart"></canvas>
+    <h2 id="ruleTitle"></h2>
+    <p id="ruleSub"></p>
+    <ul id="ruleList"></ul>
+    <p id="mixSub"></p>
+    <div id="mix"></div>
+    <p id="scaleSub"></p>
+    <div id="scale"></div>
+    <div id="prog"></div>
+    <p id="progNote"></p>
+    <ul id="styleList"></ul>
+  </div>
+</div>
+
+<!-- pure logic: instruments, styles, genome, rules, search, arrangement (no DOM, no audio) -->
+<script src="js/genome.js"></script>
+<script src="js/midi.js"></script>
+<!-- a worker-backed ticker, so the audio schedulers keep running in a background tab -->
+<script src="js/timer.js"></script>
+<!-- file saving: a plain Blob download for MIDI, WAV and loop exports -->
+<script src="js/download.js"></script>
+<!-- the audio engine and scheduler; its UI lives off-screen now -->
+<script src="js/club.js"></script>
+<!-- saved loops: localStorage slots, JSON import/export, share links -->
+<script src="js/loops.js"></script>
+<!-- HUD: top bar, meters, rail, transport, setup drawer -->
+<script src="js/game.js"></script>
+<!-- the optional play-along game -->
+<script src="js/rhythm.js"></script>
+<!-- Jev: the chat box, talking to /api/jev on this app's server -->
+<script src="js/jev.js"></script>
+<!-- 3D stage: the DJ and the light show, driven by the club view's step hook -->
+<script type="module" src="js/stage.js"></script>
+</body>
+</html>

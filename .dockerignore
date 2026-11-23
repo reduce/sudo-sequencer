@@ -1,0 +1,14 @@
+# never in an image: secrets, history, local tooling, tests
+.git
+.env
+.env.*
+node_modules
+dist
+.claude
+.claude-flow
+.swarm
+.agents
+.mcp.json
+.playwright-mcp
+tests
+*.md

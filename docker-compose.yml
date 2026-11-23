@@ -1,0 +1,20 @@
+# Sudo Sequencer, ready for Coolify (or any Docker host).
+# Coolify: New resource → Docker Compose → this repository. Set OPENROUTER_API_KEY in the
+# Environment Variables tab, and give the service a domain with port 4173 (https://your.domain:4173).
+services:
+  sudo-sequencer:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY}
+      JEV_MODEL: ${JEV_MODEL:-typesafe/jev-1.13}
+      PORT: "4173"
+      TRUST_PROXY: ${TRUST_PROXY:-1}     # one hop: Coolify's Traefik. Use 2 with Cloudflare in front.
+    expose:
+      - "4173"                            # the proxy reaches it on the Docker network; no host port
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
