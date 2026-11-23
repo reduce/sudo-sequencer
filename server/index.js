@@ -61,6 +61,10 @@ else for(const dir of ['js','css'])app.use('/'+dir,express.static(path.join(root
 app.use('/assets',express.static(path.join(root,'assets'),opts));
 // root as an option: the dotfile check then applies only to 'index.html', not to the folders above
 app.get('/',(req,res)=>{res.set('Cache-Control','no-cache');res.sendFile('index.html',{root:built?dist:root})});
+// for search engines
+const SITE=(process.env.PUBLIC_URL||'https://sequencer.sudo.la').replace(/\/+$/,'');
+app.get('/robots.txt',(req,res)=>res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: '+SITE+'/sitemap.xml\n'));
+app.get('/sitemap.xml',(req,res)=>res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'+SITE+'/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>\n'));
 app.use((req,res)=>res.status(404).send('Not found'));
 // never send a stack trace to the browser
 app.use((err,req,res,next)=>{

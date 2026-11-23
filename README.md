@@ -55,6 +55,7 @@ PORT=4173
 | `OPENROUTER_API_KEY` | for the DJ chat | Your [OpenRouter](https://openrouter.ai) key. Without it everything works except the DJ, who says he is offline. |
 | `JEV_MODEL` | no | The decision model; defaults to `typesafe/jev-1.13`. |
 | `PORT` | no | Defaults to 4173. |
+| `PUBLIC_URL` | no | The site's address for `robots.txt` and `sitemap.xml`; defaults to `https://sequencer.sudo.la`. |
 | `TRUST_PROXY` | behind a proxy | Set to `1` (or the number of proxies) so the DJ's rate limit sees real visitors. |
 
 Then start it:
